@@ -1,17 +1,43 @@
 from flask import request
 
 from api.responses import make_response
-from api.validators import validate_frequency_payload
-from repository.radioDevices import get_device, save_device, insert_device
-import numbers
+from api.settings import DEFAULT_FREQUENCY, DEFAULT_POWER
+from api.validators import (
+    normalize_json_body,
+    validate_frequency_payload,
+    validate_power_payload,
+)
+from repository.radioDevices import (
+    delete_device,
+    get_device,
+    insert_device,
+    list_devices,
+    save_device,
+)
 
 
 def register_device_routes(app):
     @app.route("/devices", methods=["POST"])
     def create_device():
-        data = request.get_json(silent=True) or {}
-        frequency = data.get("frequency", 2400)
-        power = data.get("power", 10)
+        data = request.get_json(silent=True)
+        ok, value_or_msg, error_code = normalize_json_body(data, allow_empty=True)
+        if not ok:
+            return make_response(False, value_or_msg, error_code=error_code, status=400)
+
+        data = value_or_msg
+
+        frequency = data.get("frequency", DEFAULT_FREQUENCY)
+        power = data.get("power", DEFAULT_POWER)
+
+        ok, value_or_msg, error_code = validate_frequency_payload(
+            {"frequency": frequency}
+        )
+        if not ok:
+            return make_response(False, value_or_msg, error_code=error_code, status=400)
+
+        ok, value_or_msg, error_code = validate_power_payload({"power": power})
+        if not ok:
+            return make_response(False, value_or_msg, error_code=error_code, status=400)
 
         device_id = insert_device(frequency, power)
 
@@ -26,6 +52,11 @@ def register_device_routes(app):
     def set_frequency(device_id):
         data = request.get_json(silent=True)
 
+        ok, value_or_msg, error_code = normalize_json_body(data)
+        if not ok:
+            return make_response(False, value_or_msg, error_code=error_code, status=400)
+
+        data = value_or_msg
         ok, value_or_msg, error_code = validate_frequency_payload(data)
         if not ok:
             return make_response(False, value_or_msg, error_code=error_code, status=400)
@@ -105,30 +136,16 @@ def register_device_routes(app):
     def set_power(device_id):
         data = request.get_json(silent=True)
 
-        if not isinstance(data, dict):
-            return make_response(
-                False,
-                "Request body must be JSON object",
-                error_code="INVALID_BODY",
-                status=400,
-            )
+        ok, value_or_msg, error_code = normalize_json_body(data)
+        if not ok:
+            return make_response(False, value_or_msg, error_code=error_code, status=400)
 
-        power = data.get("power")
-        if power is None:
-            return make_response(
-                False,
-                "Field 'power' is required",
-                error_code="MISSING_POWER",
-                status=400,
-            )
+        data = value_or_msg
+        ok, value_or_msg, error_code = validate_power_payload(data)
+        if not ok:
+            return make_response(False, value_or_msg, error_code=error_code, status=400)
 
-        if not isinstance(power, numbers.Real):
-            return make_response(
-                False,
-                "Field 'power' must be a number",
-                error_code="INVALID_TYPE",
-                status=400,
-            )
+        power = value_or_msg
 
         device = get_device(device_id)
         if device is None:
@@ -210,5 +227,47 @@ def register_device_routes(app):
                     else None
                 ),
             },
+            status=200,
+        )
+
+    @app.route("/devices", methods=["GET"])
+    def devices_list():
+        devices = list_devices()
+        return make_response(
+            True,
+            "Devices list",
+            data={
+                "items": [
+                    {
+                        "device_id": device.id,
+                        "frequency": device.frequency,
+                        "power": device.power,
+                        "is_connected": device.is_connected,
+                        "last_measurement": (
+                            device.last_measurement.isoformat()
+                            if device.last_measurement
+                            else None
+                        ),
+                    }
+                    for device in devices
+                ]
+            },
+            status=200,
+        )
+
+    @app.route("/devices/<int:device_id>", methods=["DELETE"])
+    def device_delete(device_id):
+        deleted = delete_device(device_id)
+        if not deleted:
+            return make_response(
+                False,
+                "Device not found",
+                error_code="NOT_FOUND",
+                status=404,
+            )
+        return make_response(
+            True,
+            "Device deleted",
+            data={"device_id": device_id},
             status=200,
         )

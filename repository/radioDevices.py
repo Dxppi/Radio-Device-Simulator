@@ -18,51 +18,68 @@ def device_from_row(row) -> RadioDevice:
 
 
 def get_device(device_id: int) -> RadioDevice | None:
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
-    cur.execute(
-        "SELECT id, frequency, power, last_measurement, is_connected "
-        "FROM devices WHERE id = ?",
-        (device_id,),
-    )
-    row = cur.fetchone()
-    con.close()
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+        cur.execute(
+            "SELECT id, frequency, power, last_measurement, is_connected "
+            "FROM devices WHERE id = ?",
+            (device_id,),
+        )
+        row = cur.fetchone()
     if row is None:
         return None
     return device_from_row(row)
 
 
 def insert_device(frequency: int, power: int) -> int:
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
-    cur.execute(
-        "INSERT INTO devices (frequency, power, last_measurement, is_connected) "
-        "VALUES (?, ?, ?, ?)",
-        (frequency, power, None, 1),
-    )
-    con.commit()
-    device_id = cur.lastrowid
-    con.close()
-    return device_id
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+        cur.execute(
+            "INSERT INTO devices (frequency, power, last_measurement, is_connected) "
+            "VALUES (?, ?, ?, ?)",
+            (frequency, power, None, 0),
+        )
+        con.commit()
+        return cur.lastrowid
 
 
 def save_device(device: RadioDevice) -> None:
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
-    last_meas = device.last_measurement.isoformat() if device.last_measurement else None
-    cur.execute(
-        """
-        UPDATE devices
-        SET frequency = ?, power = ?, last_measurement = ?, is_connected = ?
-        WHERE id = ?
-        """,
-        (
-            device.frequency,
-            device.power,
-            last_meas,
-            int(device.is_connected),
-            device.id,
-        ),
-    )
-    con.commit()
-    con.close()
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+        last_meas = (
+            device.last_measurement.isoformat() if device.last_measurement else None
+        )
+        cur.execute(
+            """
+            UPDATE devices
+            SET frequency = ?, power = ?, last_measurement = ?, is_connected = ?
+            WHERE id = ?
+            """,
+            (
+                device.frequency,
+                device.power,
+                last_meas,
+                int(device.is_connected),
+                device.id,
+            ),
+        )
+        con.commit()
+
+
+def list_devices() -> list[RadioDevice]:
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+        cur.execute(
+            "SELECT id, frequency, power, last_measurement, is_connected "
+            "FROM devices ORDER BY id"
+        )
+        rows = cur.fetchall()
+    return [device_from_row(row) for row in rows]
+
+
+def delete_device(device_id: int) -> bool:
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.cursor()
+        cur.execute("DELETE FROM devices WHERE id = ?", (device_id,))
+        con.commit()
+        return cur.rowcount > 0

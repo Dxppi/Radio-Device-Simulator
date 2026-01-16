@@ -30,3 +30,20 @@ pip install -r requirements.txt
 ```bash
 DB_PATH=radioDevices.sqlite
 ```
+
+5. Создать базу данных (инициализация таблицы)
+```bash
+python db_init.py
+```
+
+## Запуск
+
+```bash
+python app.py
+```
+
+## Тесты
+
+```bash
+pytest -q
+```

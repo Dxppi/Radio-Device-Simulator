@@ -8,8 +8,8 @@ cur.execute(
     """
 CREATE TABLE IF NOT EXISTS devices (
     id              INTEGER PRIMARY KEY,
-    frequency       INTEGER,
-    power           INTEGER,
+    frequency       REAL,
+    power           REAL,
     last_measurement TEXT,
     is_connected    INTEGER
 )

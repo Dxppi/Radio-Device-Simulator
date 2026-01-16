@@ -2,10 +2,15 @@ import numbers
 from api.settings import MIN_FREQ, MAX_FREQ
 
 
-def validate_frequency_payload(data):
+def normalize_json_body(data, allow_empty: bool = False):
+    if data is None and allow_empty:
+        return True, {}, None
     if not isinstance(data, dict):
         return False, "Request body must be JSON object", "INVALID_BODY"
+    return True, data, None
 
+
+def validate_frequency_payload(data):
     freq = data.get("frequency")
     if freq is None:
         return False, "Field 'frequency' is required", "MISSING_FREQUENCY"
@@ -24,12 +29,9 @@ def validate_frequency_payload(data):
 
 
 def validate_power_payload(data):
-    if not isinstance(data, dict):
-        return False, "Request body must be JSON object", "INVALID_BODY"
-
     power = data.get("power")
     if power is None:
-        return False, "Field 'power' is required", "MISSING_power"
+        return False, "Field 'power' is required", "MISSING_POWER"
 
     if not isinstance(power, numbers.Real):
         return False, "Field 'power' must be a number", "INVALID_TYPE"
