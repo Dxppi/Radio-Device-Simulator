@@ -3,3 +3,4 @@
 *__pycache__
 *env
 radiodevices.sqlite
+*pytest_cache
