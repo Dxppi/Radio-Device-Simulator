@@ -53,19 +53,36 @@ def test_create_device_invalid_power(client):
     [
         (MIN_FREQ, 200, True, f"Frequency set to {MIN_FREQ} MHz"),
         (MAX_FREQ, 200, True, f"Frequency set to {MAX_FREQ} MHz"),
-        (MIN_FREQ - 1, 400, False, f"Frequency must be between {MIN_FREQ} and {MAX_FREQ} MHz"),
-        (MAX_FREQ + 1, 400, False, f"Frequency must be between {MIN_FREQ} and {MAX_FREQ} MHz"),
+        (
+            MIN_FREQ - 1,
+            400,
+            False,
+            f"Frequency must be between {MIN_FREQ} and {MAX_FREQ} MHz",
+        ),
+        (
+            MAX_FREQ + 1,
+            400,
+            False,
+            f"Frequency must be between {MIN_FREQ} and {MAX_FREQ} MHz",
+        ),
     ],
 )
 def test_set_frequency_boundaries(
-    client, connected_device, frequency, expected_status, expected_success, expected_message
+    client,
+    connected_device,
+    frequency,
+    expected_status,
+    expected_success,
+    expected_message,
 ):
     device_id = connected_device
     response = client.post(
         f"/devices/{device_id}/set_frequency",
         json={"frequency": frequency},
     )
-    assert_common_response(response, expected_status, expected_success, expected_message)
+    assert_common_response(
+        response, expected_status, expected_success, expected_message
+    )
 
 
 def test_set_frequency_requires_body(client, connected_device):
