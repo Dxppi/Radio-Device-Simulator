@@ -1,5 +1,4 @@
-from flask import Flask
-from flask import request, jsonify
+from flask import Flask, request, jsonify
 import numbers
 from settings import MAX_FREQ, MIN_FREQ
 
