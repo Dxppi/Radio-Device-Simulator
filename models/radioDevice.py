@@ -19,11 +19,17 @@ class RadioDevice:
     def set_frequency(self, frequency: int | float) -> None:
         self.frequency = frequency
 
+    def set_power(self, power: int | float) -> None:
+        self.power = power
+
     def connect(self) -> None:
         self.is_connected = True
 
     def disconnect(self) -> None:
         self.is_connected = False
 
-    def set_last_measurement(self) -> None:
+    def get_status(self) -> bool:
+        return self.is_connected
+
+    def measure_signal(self) -> None:
         self.last_measurement = datetime.now()

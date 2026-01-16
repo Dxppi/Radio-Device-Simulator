@@ -21,3 +21,17 @@ def validate_frequency_payload(data):
         )
 
     return True, freq, None
+
+
+def validate_power_payload(data):
+    if not isinstance(data, dict):
+        return False, "Request body must be JSON object", "INVALID_BODY"
+
+    power = data.get("power")
+    if power is None:
+        return False, "Field 'power' is required", "MISSING_power"
+
+    if not isinstance(power, numbers.Real):
+        return False, "Field 'power' must be a number", "INVALID_TYPE"
+
+    return True, power, None
